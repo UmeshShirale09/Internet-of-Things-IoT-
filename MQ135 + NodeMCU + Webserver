@@ -1,0 +1,68 @@
+/*
+ * Carbon Dioxide Parts Per Million Meter
+ * CO2PPM
+
+ * Atmospheric CO2 Level..............400ppm
+ * Average indoor co2.............350-450ppm
+ * Maxiumum acceptable co2...........1000ppm
+ * Dangerous co2 levels.............>2000ppm
+ * 
+ */
+
+#include <ESP8266WiFi.h>
+#include <WiFiClient.h>
+#include <ESP8266WebServer.h>
+
+float ppm;
+
+// Replace with your network credentials
+const char* ssid = "MIT";
+const char* password = "12345678";
+ESP8266WebServer server(80); //instantiate server at port 80 (http port)
+
+String page = "";
+String text = "";
+#include "MQ135.h"
+int RO = 4175.25 ;
+int RS = 0, RL = 1000;
+void setup(void) {
+  // put your setup code here, to run once:
+  // Serial.begin(9600);
+  Serial.begin(115200);
+  WiFi.begin(ssid, password); //begin WiFi connection
+  Serial.println("");
+
+  // Wait for connection
+  while (WiFi.status() != WL_CONNECTED) {
+  delay(500);
+  Serial.print(".");
+
+  Serial.println("");
+Serial.print("Connected to ");
+Serial.println(ssid);
+Serial.print("IP address: ");
+Serial.println(WiFi.localIP());
+server.on("/", [](){
+
+page = "<h1>CO2 measurement using MQ135 Sensor  </h1><h3>Distance:</h3> <h3>"+String(ppm)+"</h3>"+ "<h3>ppm</h3>";
+server.send(200, "text/html", page);
+  });
+server.begin();
+Serial.println("Web server started!");
+}
+}
+void loop() {
+  // put your main code here, to run repeatedly:
+  float Vo = analogRead(A0);
+  Serial.print("Vo = ");
+  Serial.print(Vo);
+  Serial.println();
+  RS = ((5*RL) - (RL*Vo))/Vo;
+  int ratio = RS/RO ;
+  ppm = (146.15 * ( 2.868 - ratio) + 10);
+  Serial.print("ppm = ");
+  Serial.print(ppm);
+  Serial.println(); 
+  delay(1000);
+  server.handleClient();
+}
